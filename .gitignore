@@ -1,0 +1,56 @@
+# ---- Java / Maven (Spring Initializr base) ----
+target/
+*.class
+build/
+HELP.md
+.classpath
+.project
+.settings/
+bin/
+.mvn/wrapper/maven-wrapper.jar
+
+# ---- Node / Vite ----
+node_modules/
+dist/
+build/
+.vite/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.local
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+*.egg-info
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- IDE / OS ----
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- Secrets / env ----
+.env
+.env.*
+*.local
+application-local.properties
+application-secret.properties
+
+# ---- Logs ----
+*.log
+logs/
+
+
+# ---- MySQL / Flyway local data ----
+mysql-data/
+*.dump
+*.bak

@@ -139,7 +139,7 @@ CREATE TABLE users (
     person_id     INT          NULL,
     username      VARCHAR(60)  NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    `role`        ENUM('Admin','Faculty','Student') NOT NULL,
+    `role`        ENUM('Admin','Registrar','Faculty','Student') NOT NULL,
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
     last_login    DATETIME     NULL,
     CONSTRAINT pk_users PRIMARY KEY (user_id),

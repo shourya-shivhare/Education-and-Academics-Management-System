@@ -25,7 +25,11 @@ INSERT INTO program (name, degree, duration_years, department_id, total_credits)
     ('B.E. Mechanical Engineering',      'B.E.',  4, 3, 160),
     ('B.E. Civil Engineering',            'B.E.',  4, 4, 160),
     ('M.Sc. Mathematics',                'M.Sc.', 2, 5,  80),
-    ('M.Sc. Physics',                     'M.Sc.', 2, 6,  80);
+    ('M.Sc. Physics',                     'M.Sc.', 2, 6,  80),
+    ('M.Tech. Computer Science',           'M.Tech.', 2, 1,  72),
+    ('M.Tech. Electronics & Communication', 'M.Tech.', 2, 2,  72),
+    ('Ph.D. Mechanical Engineering',      'Ph.D.', 5, 3,  24),
+    ('Ph.D. Physics',                     'Ph.D.', 5, 6,  24);
 
 -- Terms (6). Today is 2026-10-26, which falls in '2026-27 Odd', so that term is current.
 INSERT INTO term (name, start_date, end_date, is_current) VALUES

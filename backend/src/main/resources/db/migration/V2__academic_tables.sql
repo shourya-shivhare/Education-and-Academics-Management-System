@@ -55,6 +55,7 @@ CREATE TABLE enrollment (
     status        ENUM('Enrolled','Dropped','Completed') NOT NULL DEFAULT 'Enrolled',
     final_marks   DECIMAL(6,2) NULL,
     grade         VARCHAR(2)   NULL,
+    is_detained   BOOLEAN      NOT NULL DEFAULT FALSE,
     CONSTRAINT pk_enrollment PRIMARY KEY (enrollment_id),
     CONSTRAINT uq_enrollment_student_offering UNIQUE (student_id, offering_id),
     CONSTRAINT fk_enrollment_student FOREIGN KEY (student_id)
@@ -139,7 +140,7 @@ CREATE TABLE users (
     person_id     INT          NULL,
     username      VARCHAR(60)  NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    `role`        ENUM('Admin','Faculty','Student') NOT NULL,
+    `role`        ENUM('Admin','Registrar','Faculty','Student') NOT NULL,
     is_active     BOOLEAN      NOT NULL DEFAULT TRUE,
     last_login    DATETIME     NULL,
     CONSTRAINT pk_users PRIMARY KEY (user_id),

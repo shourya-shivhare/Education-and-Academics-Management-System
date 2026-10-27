@@ -1,0 +1,286 @@
+[
+  {
+    "id": "q01",
+    "title": "Student Academic Transcript",
+    "concept": "Multi-table INNER JOIN (5+ tables)",
+    "description": "Comprehensive student course transcript joining student, person, enrollment, course_offering, term, subject, and faculty.",
+    "sql": "SELECT s.student_id, s.roll_no, CONCAT(p_stu.first_name, ' ', p_stu.last_name) AS student_name, t.name AS term_name, sub.code AS subject_code, sub.title AS subject_title, sub.credits, CONCAT(p_fac.first_name, ' ', p_fac.last_name) AS instructor_name, e.final_marks, e.grade FROM student s JOIN person p_stu ON s.student_id = p_stu.person_id JOIN enrollment e ON s.student_id = e.student_id JOIN course_offering co ON e.offering_id = co.offering_id JOIN term t ON co.term_id = t.term_id JOIN subject sub ON co.subject_id = sub.subject_id JOIN faculty f ON co.faculty_id = f.faculty_id JOIN person p_fac ON f.faculty_id = p_fac.person_id WHERE s.student_id = ? ORDER BY t.start_date, sub.code;",
+    "params": [
+      {
+        "name": "student_id",
+        "type": "INTEGER",
+        "default": 31,
+        "description": "Student ID (Person ID)"
+      }
+    ]
+  },
+  {
+    "id": "q02",
+    "title": "Subject Catalog with Offering Counts",
+    "concept": "LEFT OUTER JOIN",
+    "description": "All subjects in the catalog and their offering counts, including subjects that have never been offered (count = 0).",
+    "sql": "SELECT d.name AS department_name, sub.code AS subject_code, sub.title AS subject_title, sub.credits, COUNT(co.offering_id) AS total_offerings_count FROM subject sub JOIN department d ON sub.department_id = d.department_id LEFT JOIN course_offering co ON sub.subject_id = co.subject_id GROUP BY d.name, sub.subject_id, sub.code, sub.title, sub.credits ORDER BY total_offerings_count ASC, sub.code ASC;",
+    "params": []
+  },
+  {
+    "id": "q03",
+    "title": "Course Offerings and Student Enrollments",
+    "concept": "RIGHT OUTER JOIN",
+    "description": "All course offerings in a given term and their enrolled students, including empty offerings with zero enrollments.",
+    "sql": "SELECT co.offering_id, sub.code AS subject_code, sub.title AS subject_title, co.section, co.capacity, e.enrollment_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, e.status AS enrollment_status FROM enrollment e JOIN student s ON e.student_id = s.student_id JOIN person p ON s.student_id = p.person_id RIGHT JOIN course_offering co ON e.offering_id = co.offering_id JOIN subject sub ON co.subject_id = sub.subject_id WHERE co.term_id = ? ORDER BY co.offering_id, s.roll_no;",
+    "params": [
+      {
+        "name": "term_id",
+        "type": "INTEGER",
+        "default": 5,
+        "description": "Academic Term ID"
+      }
+    ]
+  },
+  {
+    "id": "q04",
+    "title": "Department vs. Program Linkage (Full Outer Simulation)",
+    "concept": "FULL OUTER JOIN (LEFT UNION RIGHT)",
+    "description": "Simulates FULL OUTER JOIN in MySQL using LEFT UNION RIGHT to identify unmatched departments or orphan programs.",
+    "sql": "SELECT d.department_id, d.name AS department_name, p.program_id, p.name AS program_name, p.degree FROM department d LEFT JOIN program p ON d.department_id = p.department_id UNION SELECT d.department_id, d.name AS department_name, p.program_id, p.name AS program_name, p.degree FROM department d RIGHT JOIN program p ON d.department_id = p.department_id;",
+    "params": []
+  },
+  {
+    "id": "q05",
+    "title": "Subject Prerequisite Pairs",
+    "concept": "SELF JOIN",
+    "description": "Self-join on subject via subject_prerequisite to display each course alongside its required prerequisite course name.",
+    "sql": "SELECT s.code AS course_code, s.title AS course_title, sp.min_grade AS required_min_grade, prereq.code AS prerequisite_code, prereq.title AS prerequisite_title FROM subject s JOIN subject_prerequisite sp ON s.subject_id = sp.subject_id JOIN subject prereq ON sp.prereq_subject_id = prereq.subject_id ORDER BY s.code, prereq.code;",
+    "params": []
+  },
+  {
+    "id": "q06",
+    "title": "Students Taught by Faculty Member",
+    "concept": "Subquery with IN predicate",
+    "description": "Identifies all unique students who have enrolled in courses instructed by a specific faculty member.",
+    "sql": "SELECT s.student_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, prog.name AS program_name, s.status FROM student s JOIN person p ON s.student_id = p.person_id JOIN program prog ON s.program_id = prog.program_id WHERE s.student_id IN (SELECT DISTINCT e.student_id FROM enrollment e JOIN course_offering co ON e.offering_id = co.offering_id WHERE co.faculty_id = ?) ORDER BY s.roll_no;",
+    "params": [
+      {
+        "name": "faculty_id",
+        "type": "INTEGER",
+        "default": 1,
+        "description": "Faculty ID (Person ID)"
+      }
+    ]
+  },
+  {
+    "id": "q07",
+    "title": "Enrolled Students with Unpaid Fees",
+    "concept": "EXISTS and NOT EXISTS",
+    "description": "Uses correlated EXISTS (semi-join) and NOT EXISTS (anti-join) to find students enrolled in a term who have not paid their tuition.",
+    "sql": "SELECT s.student_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, p.email, prog.name AS program_name FROM student s JOIN person p ON s.student_id = p.person_id JOIN program prog ON s.program_id = prog.program_id WHERE EXISTS (SELECT 1 FROM enrollment e JOIN course_offering co ON e.offering_id = co.offering_id WHERE e.student_id = s.student_id AND co.term_id = ?) AND NOT EXISTS (SELECT 1 FROM fee_payment fp WHERE fp.student_id = s.student_id AND fp.term_id = ? AND fp.status = 'Paid') ORDER BY s.roll_no;",
+    "params": [
+      {
+        "name": "term_id",
+        "type": "INTEGER",
+        "default": 5,
+        "description": "Academic Term ID"
+      },
+      {
+        "name": "term_id",
+        "type": "INTEGER",
+        "default": 5,
+        "description": "Academic Term ID (Repeated for fee verification)"
+      }
+    ]
+  },
+  {
+    "id": "q08",
+    "title": "Students Outperforming Benchmark Offering",
+    "concept": "Quantified Comparison (ALL)",
+    "description": "Finds students whose final marks in a course are strictly greater than ALL student marks achieved in a designated benchmark offering.",
+    "sql": "SELECT s.student_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, sub.code AS subject_code, e.final_marks, e.grade FROM enrollment e JOIN student s ON e.student_id = s.student_id JOIN person p ON s.student_id = p.person_id JOIN course_offering co ON e.offering_id = co.offering_id JOIN subject sub ON co.subject_id = sub.subject_id WHERE e.final_marks IS NOT NULL AND e.final_marks > ALL (SELECT benchmark_e.final_marks FROM enrollment benchmark_e WHERE benchmark_e.offering_id = ? AND benchmark_e.final_marks IS NOT NULL) ORDER BY e.final_marks DESC;",
+    "params": [
+      {
+        "name": "benchmark_offering_id",
+        "type": "INTEGER",
+        "default": 1,
+        "description": "Benchmark Offering ID"
+      }
+    ]
+  },
+  {
+    "id": "q09",
+    "title": "Students Above Own Subject Average",
+    "concept": "Correlated Subquery",
+    "description": "Correlated subquery in WHERE and SELECT comparing each student's score against the overall mean for that specific subject.",
+    "sql": "SELECT s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, sub.code AS subject_code, sub.title AS subject_title, e.final_marks, (SELECT ROUND(AVG(inner_e.final_marks), 2) FROM enrollment inner_e JOIN course_offering inner_co ON inner_e.offering_id = inner_co.offering_id WHERE inner_co.subject_id = co.subject_id AND inner_e.final_marks IS NOT NULL) AS subject_avg_marks FROM enrollment e JOIN student s ON e.student_id = s.student_id JOIN person p ON s.student_id = p.person_id JOIN course_offering co ON e.offering_id = co.offering_id JOIN subject sub ON co.subject_id = sub.subject_id WHERE e.final_marks IS NOT NULL AND e.final_marks > (SELECT AVG(inner_e.final_marks) FROM enrollment inner_e JOIN course_offering inner_co ON inner_e.offering_id = inner_co.offering_id WHERE inner_co.subject_id = co.subject_id AND inner_e.final_marks IS NOT NULL) ORDER BY sub.code, e.final_marks DESC;",
+    "params": []
+  },
+  {
+    "id": "q10",
+    "title": "Department Ranking by Student GPA",
+    "concept": "Derived Table (Subquery in FROM)",
+    "description": "Two-stage aggregation: computes student GPAs in an inline subquery, then computes the mean GPA per department.",
+    "sql": "SELECT student_avgs.department_name, COUNT(student_avgs.student_id) AS evaluated_students_count, ROUND(AVG(student_avgs.student_gpa), 2) AS dept_academic_performance FROM (SELECT d.department_id, d.name AS department_name, s.student_id, AVG(e.final_marks) AS student_gpa FROM student s JOIN program prog ON s.program_id = prog.program_id JOIN department d ON prog.department_id = d.department_id JOIN enrollment e ON s.student_id = e.student_id WHERE e.final_marks IS NOT NULL GROUP BY d.department_id, d.name, s.student_id) AS student_avgs GROUP BY student_avgs.department_id, student_avgs.department_name ORDER BY dept_academic_performance DESC;",
+    "params": []
+  },
+  {
+    "id": "q11",
+    "title": "Statistical Mark Profiles per Subject",
+    "concept": "Aggregate Functions (COUNT, SUM, AVG, MIN, MAX)",
+    "description": "Comprehensive statistical summary per subject showing total graded students, average, min, max, standard deviation, and pass counts.",
+    "sql": "SELECT sub.code AS subject_code, sub.title AS subject_title, sub.credits, COUNT(e.enrollment_id) AS total_graded_students, ROUND(AVG(e.final_marks), 2) AS average_score, MIN(e.final_marks) AS minimum_score, MAX(e.final_marks) AS maximum_score, ROUND(STDDEV_SAMP(e.final_marks), 2) AS score_std_dev, SUM(CASE WHEN e.final_marks >= 40.0 THEN 1 ELSE 0 END) AS passing_students_count FROM subject sub JOIN course_offering co ON sub.subject_id = co.subject_id JOIN enrollment e ON co.offering_id = e.offering_id WHERE e.final_marks IS NOT NULL GROUP BY sub.subject_id, sub.code, sub.title, sub.credits ORDER BY average_score DESC;",
+    "params": []
+  },
+  {
+    "id": "q12",
+    "title": "Student Distribution by Department and Program",
+    "concept": "Multi-column GROUP BY",
+    "description": "Breaks down active, graduated, and inactive student counts grouped hierarchically across departments and degree programs.",
+    "sql": "SELECT d.name AS department_name, p.name AS program_name, p.degree, COUNT(s.student_id) AS total_students, SUM(CASE WHEN s.status = 'Active' THEN 1 ELSE 0 END) AS active_students, SUM(CASE WHEN s.status = 'Graduated' THEN 1 ELSE 0 END) AS graduated_students, SUM(CASE WHEN s.status IN ('Dropped', 'Suspended') THEN 1 ELSE 0 END) AS inactive_students FROM department d JOIN program p ON d.department_id = p.department_id LEFT JOIN student s ON p.program_id = s.program_id GROUP BY d.department_id, d.name, p.program_id, p.name, p.degree ORDER BY d.name, p.name;",
+    "params": []
+  },
+  {
+    "id": "q13",
+    "title": "Difficult Subjects (Pass Rate Below 60%)",
+    "concept": "HAVING Clause",
+    "description": "Filters grouped subject metrics after aggregation to identify courses with low pass percentages (< 60%).",
+    "sql": "SELECT sub.code AS subject_code, sub.title AS subject_title, d.name AS department_name, COUNT(e.enrollment_id) AS total_students_evaluated, SUM(CASE WHEN e.final_marks >= 40.0 THEN 1 ELSE 0 END) AS passed_students, ROUND((SUM(CASE WHEN e.final_marks >= 40.0 THEN 1 ELSE 0 END) / COUNT(e.enrollment_id)) * 100, 2) AS pass_percentage FROM subject sub JOIN department d ON sub.department_id = d.department_id JOIN course_offering co ON sub.subject_id = co.subject_id JOIN enrollment e ON co.offering_id = e.offering_id WHERE e.final_marks IS NOT NULL GROUP BY sub.subject_id, sub.code, sub.title, d.name HAVING pass_percentage < 60.00 AND total_students_evaluated >= 5 ORDER BY pass_percentage ASC;",
+    "params": []
+  },
+  {
+    "id": "q14",
+    "title": "Faculty Workload Threshold",
+    "concept": "HAVING with Multi-Table JOIN",
+    "description": "Combines multi-table joins and aggregate grouping with a HAVING condition to flag faculty teaching high course loads.",
+    "sql": "SELECT f.faculty_id, f.employee_no, CONCAT(p.first_name, ' ', p.last_name) AS faculty_name, d.name AS department_name, t.name AS term_name, COUNT(co.offering_id) AS total_offerings_taught, SUM(co.capacity) AS total_student_capacity FROM faculty f JOIN person p ON f.faculty_id = p.person_id JOIN department d ON f.department_id = d.department_id JOIN course_offering co ON f.faculty_id = co.faculty_id JOIN term t ON co.term_id = t.term_id WHERE co.term_id = ? GROUP BY f.faculty_id, f.employee_no, p.first_name, p.last_name, d.name, t.name HAVING total_offerings_taught >= 2 ORDER BY total_offerings_taught DESC, faculty_name ASC;",
+    "params": [
+      {
+        "name": "term_id",
+        "type": "INTEGER",
+        "default": 1,
+        "description": "Academic Term ID"
+      }
+    ]
+  },
+  {
+    "id": "q15",
+    "title": "Departmental Student Rankings",
+    "concept": "Window Functions (RANK and DENSE_RANK)",
+    "description": "Computes peer ranks within each department using RANK() and DENSE_RANK() without collapsing individual records.",
+    "sql": "SELECT d.name AS department_name, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, ROUND(AVG(e.final_marks), 2) AS student_gpa, RANK() OVER (PARTITION BY d.department_id ORDER BY AVG(e.final_marks) DESC) AS rank_in_dept, DENSE_RANK() OVER (PARTITION BY d.department_id ORDER BY AVG(e.final_marks) DESC) AS dense_rank_in_dept FROM student s JOIN person p ON s.student_id = p.person_id JOIN program prog ON s.program_id = prog.program_id JOIN department d ON prog.department_id = d.department_id JOIN enrollment e ON s.student_id = e.student_id WHERE e.final_marks IS NOT NULL GROUP BY d.department_id, d.name, s.student_id, s.roll_no, p.first_name, p.last_name ORDER BY d.name, rank_in_dept;",
+    "params": []
+  },
+  {
+    "id": "q16",
+    "title": "Term-over-Term GPA Trajectory",
+    "concept": "Window Function (LAG)",
+    "description": "Uses LAG() to access a student's prior term GPA and compute term-by-term performance improvement or decline.",
+    "sql": "WITH student_term_perf AS (SELECT s.student_id, s.roll_no, t.term_id, t.name AS term_name, t.start_date, ROUND(AVG(e.final_marks), 2) AS term_gpa FROM student s JOIN enrollment e ON s.student_id = e.student_id JOIN course_offering co ON e.offering_id = co.offering_id JOIN term t ON co.term_id = t.term_id WHERE s.student_id = ? AND e.final_marks IS NOT NULL GROUP BY s.student_id, s.roll_no, t.term_id, t.name, t.start_date) SELECT roll_no, term_name, term_gpa, LAG(term_gpa, 1) OVER (ORDER BY start_date) AS previous_term_gpa, ROUND(term_gpa - LAG(term_gpa, 1) OVER (ORDER BY start_date), 2) AS gpa_change FROM student_term_perf ORDER BY start_date ASC;",
+    "params": [
+      {
+        "name": "student_id",
+        "type": "INTEGER",
+        "default": 31,
+        "description": "Student ID (Person ID)"
+      }
+    ]
+  },
+  {
+    "id": "q17",
+    "title": "Cumulative Program CGPA via CTE",
+    "concept": "Common Table Expression (CTE)",
+    "description": "Two-stage non-recursive CTE computing course quality points followed by cumulative credit-weighted CGPA per student.",
+    "sql": "WITH term_course_points AS (SELECT e.student_id, co.term_id, sub.credits, gs.grade_point, (sub.credits * gs.grade_point) AS quality_points FROM enrollment e JOIN course_offering co ON e.offering_id = co.offering_id JOIN subject sub ON co.subject_id = sub.subject_id JOIN grade_scale gs ON e.grade = gs.grade_letter WHERE e.final_marks IS NOT NULL), student_cumulative AS (SELECT tcp.student_id, SUM(tcp.quality_points) AS total_quality_points, SUM(tcp.credits) AS total_credits_earned, ROUND(SUM(tcp.quality_points) / SUM(tcp.credits), 2) AS cgpa FROM term_course_points tcp GROUP BY tcp.student_id) SELECT s.student_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, prog.name AS program_name, sc.total_credits_earned, sc.cgpa FROM student_cumulative sc JOIN student s ON sc.student_id = s.student_id JOIN person p ON s.student_id = p.person_id JOIN program prog ON s.program_id = prog.program_id WHERE s.program_id = ? ORDER BY sc.cgpa DESC;",
+    "params": [
+      {
+        "name": "program_id",
+        "type": "INTEGER",
+        "default": 1,
+        "description": "Program ID"
+      }
+    ]
+  },
+  {
+    "id": "q18",
+    "title": "Full Recursive Prerequisite Tree",
+    "concept": "Recursive CTE (WITH RECURSIVE)",
+    "description": "Traverses an acyclic directed graph (DAG) of course prerequisites to report the complete dependency chain with depth levels.",
+    "sql": "WITH RECURSIVE prereq_tree AS (SELECT sp.subject_id, s.code AS course_code, s.title AS course_title, sp.prereq_subject_id, p.code AS prereq_code, p.title AS prereq_title, sp.min_grade, 1 AS depth_level FROM subject_prerequisite sp JOIN subject s ON sp.subject_id = s.subject_id JOIN subject p ON sp.prereq_subject_id = p.subject_id WHERE s.code = ? UNION ALL SELECT child.subject_id, child.code AS course_code, child.title AS course_title, sp2.prereq_subject_id, p2.code AS prereq_code, p2.title AS prereq_title, sp2.min_grade, pt.depth_level + 1 AS depth_level FROM prereq_tree pt JOIN subject child ON pt.prereq_subject_id = child.subject_id JOIN subject_prerequisite sp2 ON child.subject_id = sp2.subject_id JOIN subject p2 ON sp2.prereq_subject_id = p2.subject_id) SELECT depth_level, course_code, course_title, prereq_code, prereq_title, min_grade FROM prereq_tree ORDER BY depth_level ASC, course_code ASC;",
+    "params": [
+      {
+        "name": "course_code",
+        "type": "STRING",
+        "default": "CS401",
+        "description": "Target Subject Code (e.g. CS401, CS301, EC301)"
+      }
+    ]
+  },
+  {
+    "id": "q19",
+    "title": "Course Enrollment Set Difference and Intersection",
+    "concept": "Set Operations (Join Equivalents)",
+    "description": "Simulates EXCEPT (difference) via anti-join and INTERSECT (intersection) via dual inner join for universal MySQL 8.x compatibility.",
+    "sql": "SELECT 'Enrolled in A but NOT B (Difference)' AS set_relation, s.student_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name FROM student s JOIN person p ON s.student_id = p.person_id JOIN enrollment e_a ON s.student_id = e_a.student_id JOIN course_offering co_a ON e_a.offering_id = co_a.offering_id JOIN subject sub_a ON co_a.subject_id = sub_a.subject_id WHERE sub_a.code = ? AND NOT EXISTS (SELECT 1 FROM enrollment e_b JOIN course_offering co_b ON e_b.offering_id = co_b.offering_id JOIN subject sub_b ON co_b.subject_id = sub_b.subject_id WHERE e_b.student_id = s.student_id AND sub_b.code = ?) UNION ALL SELECT 'Enrolled in Both A and B (Intersection)' AS set_relation, s.student_id, s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name FROM student s JOIN person p ON s.student_id = p.person_id JOIN enrollment e_a ON s.student_id = e_a.student_id JOIN course_offering co_a ON e_a.offering_id = co_a.offering_id JOIN subject sub_a ON co_a.subject_id = sub_a.subject_id JOIN enrollment e_b ON s.student_id = e_b.student_id JOIN course_offering co_b ON e_b.offering_id = co_b.offering_id JOIN subject sub_b ON co_b.subject_id = sub_b.subject_id WHERE sub_a.code = ? AND sub_b.code = ?;",
+    "params": [
+      {
+        "name": "course_code_a",
+        "type": "STRING",
+        "default": "CS101",
+        "description": "Course Code A"
+      },
+      {
+        "name": "course_code_b",
+        "type": "STRING",
+        "default": "CS201",
+        "description": "Course Code B"
+      },
+      {
+        "name": "course_code_a",
+        "type": "STRING",
+        "default": "CS101",
+        "description": "Course Code A (Repeated for intersection branch)"
+      },
+      {
+        "name": "course_code_b",
+        "type": "STRING",
+        "default": "CS201",
+        "description": "Course Code B (Repeated for intersection branch)"
+      }
+    ]
+  },
+  {
+    "id": "q20",
+    "title": "Attendance and Grade Classification Bands",
+    "concept": "CASE Expressions",
+    "description": "Classifies student enrollments into institutional attendance compliance tiers and academic grade bands using CASE WHEN.",
+    "sql": "SELECT s.roll_no, CONCAT(p.first_name, ' ', p.last_name) AS student_name, sub.code AS subject_code, att_summary.attendance_pct, CASE WHEN att_summary.attendance_pct >= 85.0 THEN 'Good Standing (>=85%)' WHEN att_summary.attendance_pct >= 75.0 THEN 'Satisfactory (75-84%)' ELSE 'Detained / Critical Risk (<75%)' END AS attendance_category, e.final_marks, CASE WHEN e.final_marks >= 90.0 THEN 'Distinction (O)' WHEN e.final_marks >= 70.0 THEN 'First Class (A/A+)' WHEN e.final_marks >= 50.0 THEN 'Second Class (B/B+)' WHEN e.final_marks >= 40.0 THEN 'Pass (C/P)' WHEN e.final_marks IS NOT NULL THEN 'Fail (F)' ELSE 'In Progress / Ungraded' END AS academic_grade_band FROM enrollment e JOIN student s ON e.student_id = s.student_id JOIN person p ON s.student_id = p.person_id JOIN course_offering co ON e.offering_id = co.offering_id JOIN subject sub ON co.subject_id = sub.subject_id LEFT JOIN (SELECT enrollment_id, ROUND((SUM(CASE WHEN status IN ('Present','Late') THEN 1 ELSE 0 END) / COUNT(*)) * 100, 2) AS attendance_pct FROM attendance GROUP BY enrollment_id) AS att_summary ON e.enrollment_id = att_summary.enrollment_id WHERE co.term_id = ? ORDER BY att_summary.attendance_pct ASC;",
+    "params": [
+      {
+        "name": "term_id",
+        "type": "INTEGER",
+        "default": 1,
+        "description": "Academic Term ID"
+      }
+    ]
+  },
+  {
+    "id": "q21",
+    "title": "Monthly Attendance Trends",
+    "concept": "Date Functions (MONTH, DATE_FORMAT)",
+    "description": "Aggregates student attendance logs across temporal intervals (year-month) using SQL date formatting functions.",
+    "sql": "SELECT DATE_FORMAT(a.class_date, '%Y-%m') AS year_month, MONTHNAME(a.class_date) AS month_name, COUNT(a.attendance_id) AS total_attendance_entries, SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) AS present_count, SUM(CASE WHEN a.status = 'Late' THEN 1 ELSE 0 END) AS late_count, SUM(CASE WHEN a.status = 'Absent' THEN 1 ELSE 0 END) AS absent_count, ROUND((SUM(CASE WHEN a.status IN ('Present', 'Late') THEN 1 ELSE 0 END) / COUNT(a.attendance_id)) * 100, 2) AS monthly_attendance_rate FROM attendance a JOIN enrollment e ON a.enrollment_id = e.enrollment_id JOIN course_offering co ON e.offering_id = co.offering_id WHERE co.term_id = ? GROUP BY DATE_FORMAT(a.class_date, '%Y-%m'), MONTHNAME(a.class_date), MONTH(a.class_date) ORDER BY year_month ASC;",
+    "params": [
+      {
+        "name": "term_id",
+        "type": "INTEGER",
+        "default": 1,
+        "description": "Academic Term ID"
+      }
+    ]
+  },
+  {
+    "id": "q22",
+    "title": "Enrollment and Performance Subtotals",
+    "concept": "GROUP BY WITH ROLLUP",
+    "description": "Hierarchical multi-dimensional grouping with super-aggregate subtotals and institutional grand totals using WITH ROLLUP.",
+    "sql": "SELECT COALESCE(d.name, '--- ALL DEPARTMENTS (GRAND TOTAL) ---') AS department_name, COALESCE(p.name, '--- DEPARTMENT SUBTOTAL ---') AS program_name, COUNT(e.enrollment_id) AS total_enrollments, ROUND(AVG(e.final_marks), 2) AS avg_final_marks, SUM(CASE WHEN e.final_marks >= 40.0 THEN 1 ELSE 0 END) AS passed_enrollments FROM department d JOIN program p ON d.department_id = p.department_id JOIN student s ON p.program_id = s.program_id JOIN enrollment e ON s.student_id = e.student_id GROUP BY d.name, p.name WITH ROLLUP;",
+    "params": []
+  }
+]

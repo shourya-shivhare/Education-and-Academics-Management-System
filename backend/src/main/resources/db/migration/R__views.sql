@@ -238,3 +238,25 @@ SELECT
 FROM classroom
 WHERE capacity >= 20
 WITH CHECK OPTION;
+
+
+-- -----------------------------------------------------------------------------
+-- 7. v_subject_catalog (Course Catalog for ML TF-IDF and Student Browsing)
+-- Denormalized view joining subject with department and prerequisite codes.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_subject_catalog AS
+SELECT 
+    s.subject_id,
+    s.code,
+    s.title,
+    s.credits,
+    s.syllabus,
+    d.department_id,
+    d.name AS department_name,
+    GROUP_CONCAT(req.code ORDER BY req.code SEPARATOR ', ') AS prerequisite_codes
+FROM subject s
+JOIN department d ON s.department_id = d.department_id
+LEFT JOIN subject_prerequisite sp ON s.subject_id = sp.subject_id
+LEFT JOIN subject req ON sp.prereq_subject_id = req.subject_id
+GROUP BY s.subject_id, s.code, s.title, s.credits, s.syllabus, d.department_id, d.name;
+

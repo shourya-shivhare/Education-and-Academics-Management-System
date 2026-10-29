@@ -204,6 +204,15 @@ public class GlobalExceptionHandler {
 
     // ── Catch-all ─────────────────────────────────────────────────────────
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorEnvelope> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorEnvelope("INVALID_ARGUMENT", ex.getMessage(),
+                        traceService.getEntries()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorEnvelope> handleGeneric(Exception ex) {
         log.error("Unhandled exception", ex);

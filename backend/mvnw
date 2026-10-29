@@ -1,0 +1,12 @@
+#!/bin/sh
+# Maven wrapper shell script (Linux/Mac)
+MAVEN_PROJECTBASEDIR=$(dirname "$0")
+MVNW_REPOURL=https://repo.maven.apache.org/maven2
+WRAPPER_JAR="$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar"
+
+if [ ! -f "$WRAPPER_JAR" ]; then
+    curl -s -o "$WRAPPER_JAR" \
+        "$MVNW_REPOURL/org/apache/maven/wrapper/maven-wrapper/3.2.0/maven-wrapper-3.2.0.jar"
+fi
+
+exec java -jar "$WRAPPER_JAR" "$@"

@@ -1,0 +1,9 @@
+# Exclude things that don't need to be sent to the Docker build daemon.
+# The multi-stage Dockerfile only needs: .mvn/, mvnw, pom.xml, src/
+
+target/
+*.md
+.git
+.gitignore
+.idea
+*.iml

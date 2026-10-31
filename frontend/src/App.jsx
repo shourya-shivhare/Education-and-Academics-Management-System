@@ -6,6 +6,14 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import NotFoundPage from './pages/NotFoundPage';
+// Prompt 17 pages
+import StudentsPage   from './pages/StudentsPage';
+import FacultyPage    from './pages/FacultyPage';
+import SubjectsPage   from './pages/SubjectsPage';
+import OfferingsPage  from './pages/OfferingsPage';
+import EnrollmentPage from './pages/EnrollmentPage';
+import AttendancePage from './pages/AttendancePage';
+import MarksPage      from './pages/MarksPage';
 
 /**
  * App – top-level router.
@@ -44,18 +52,17 @@ export default function App() {
                 <Route index element={<DashboardPage />} />
 
                 {/* Stubs – replaced one-by-one in Prompt 17 and 18 */}
-                <Route path="/students"         element={<ComingSoon title="Students" />} />
-                <Route path="/faculty"          element={<ComingSoon title="Faculty" />} />
-                <Route path="/subjects"         element={<ComingSoon title="Subjects" />} />
-                <Route path="/offerings"        element={<ComingSoon title="Course Offerings" />} />
-                <Route path="/enrollment"       element={<ComingSoon title="Enrollment" />} />
-                <Route path="/attendance"       element={<ComingSoon title="Attendance" />} />
-                <Route path="/marks"            element={<ComingSoon title="Marks" />} />
+                <Route path="/students"         element={<StudentsPage />} />
+                <Route path="/faculty"          element={<FacultyPage />} />
+                <Route path="/subjects"         element={<SubjectsPage />} />
+                <Route path="/offerings"        element={<OfferingsPage />} />
+                <Route path="/enrollment"       element={<EnrollmentPage />} />
+                <Route path="/attendance"       element={<AttendancePage />} />
+                <Route path="/marks"            element={<MarksPage />} />
                 <Route path="/transcript"       element={<ComingSoon title="My Transcript" />} />
                 <Route path="/reports"          element={<ComingSoon title="Reports" />} />
                 <Route path="/labs/acid"        element={<ComingSoon title="ACID Lab" />} />
                 <Route path="/labs/concurrency" element={<ComingSoon title="Concurrency Lab" />} />
-                {/* Schema / ER – the "View ER / Schema" button target */}
                 <Route path="/schema"           element={<ComingSoon title="Schema / ER Diagram" />} />
                 <Route path="/risk"             element={<ComingSoon title="AI Risk Dashboard" />} />
                 <Route path="/console"          element={<ComingSoon title="SQL Console (Admin)" />} />

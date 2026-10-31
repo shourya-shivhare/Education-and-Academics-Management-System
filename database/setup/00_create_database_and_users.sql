@@ -32,11 +32,11 @@ CREATE USER IF NOT EXISTS 'flyway_user'@'%' IDENTIFIED BY 'ChangeMe_flyway_2026!
 -- privileges to app_user (migrations own the runtime-user provisioning).
 GRANT ALL PRIVILEGES ON edu_db.* TO 'flyway_user'@'%' WITH GRANT OPTION;
 
--- Global static privileges to CREATE ROLE and DROP ROLE on *.* are needed
--- because the project models access control with MySQL ROLES (business rules
--- in the DB). Migrations create roles and GRANT them to app_user; role
--- creation/drop requires a global static privilege, not a per-db one.
-GRANT CREATE ROLE, DROP ROLE ON *.* TO 'flyway_user'@'%';
+-- Global static privileges needed for Flyway migrations:
+--   CREATE ROLE, DROP ROLE: create and drop MySQL roles
+--   ROLE_ADMIN: GRANT roles to app_user
+--   CREATE USER: SET DEFAULT ROLE ... TO app_user
+GRANT CREATE ROLE, DROP ROLE, ROLE_ADMIN, CREATE USER ON *.* TO 'flyway_user'@'%';
 
 -- -----------------------------------------------------------------------------
 -- 3. Runtime user: app_user

@@ -1,0 +1,64 @@
+# =============================================================================
+# docker-compose.yml – EduManage development stack
+#
+# Services:
+#   db       – MySQL 8.4 (InnoDB, utf8mb4)
+#              Auto-runs database/setup/00_create_database_and_users.sql
+#              on first start via docker-entrypoint-initdb.d/
+#
+# Usage:
+#   docker compose up -d          # start MySQL in background
+#   docker compose logs -f db     # tail MySQL logs
+#   docker compose down           # stop (keeps volume)
+#   docker compose down -v        # stop + delete volume (full reset)
+#
+# After MySQL is up (~15s), start Spring Boot:
+#   cd backend && .\mvnw.cmd spring-boot:run
+# Then start React:
+#   cd frontend && npm run dev
+# =============================================================================
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: edumanage_mysql
+    restart: unless-stopped
+
+    environment:
+      # Root password – dev only
+      MYSQL_ROOT_PASSWORD: root
+      # Pre-create edu_db so the bootstrap SQL finds it
+      MYSQL_DATABASE: edu_db
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_0900_ai_ci
+
+    ports:
+      # Expose 3306 → localhost:3306 so Spring Boot can connect
+      - "3306:3306"
+
+    volumes:
+      # Persist data between restarts
+      - mysql_data:/var/lib/mysql
+
+      # ── Bootstrap SQL ──────────────────────────────────────────────────────
+      # Any .sql file in this directory is executed automatically on the
+      # FIRST container start (when /var/lib/mysql is empty).
+      # This creates flyway_user, app_user, grants, and the FLUSH.
+      - ./database/setup/00_create_database_and_users.sql:/docker-entrypoint-initdb.d/00_bootstrap.sql:ro
+
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+      --default-time-zone=+00:00
+      --log-bin-trust-function-creators=ON
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  mysql_data:
+    driver: local

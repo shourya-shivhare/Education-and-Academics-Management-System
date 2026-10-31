@@ -12,29 +12,34 @@ server:
 
 spring:
   # ── Primary datasource (app_user – runtime DML) ───────────────────────────
+  # NOTE: Must use 'jdbc-url' for HikariCP 5.x (setUrl() alias was removed).
+  # 'url' is kept as an alias so @Value("${spring.datasource.url}") still resolves.
   datasource:
     url: jdbc:mysql://localhost:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+    jdbc-url: jdbc:mysql://localhost:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
     username: app_user
     password: ChangeMe_app_2026!
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      pool-name: AppPool
-      maximum-pool-size: 10
-      minimum-idle: 2
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+    pool-name: AppPool
+    maximum-pool-size: 10
+    minimum-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
 
   # ── Secondary datasource (flyway_user – migrations only) ─────────────────
+  # NOTE: @ConfigurationProperties on a raw HikariDataSource (custom prefix)
+  # requires HikariCP property names. Use 'jdbc-url' (not 'url') because
+  # Spring Boot's url→jdbcUrl alias only applies to spring.datasource.*.
+  # Pool settings are top-level HikariDataSource properties here (no 'hikari:' nesting).
   flyway-datasource:
-    url: jdbc:mysql://localhost:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+    jdbc-url: jdbc:mysql://localhost:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
     username: flyway_user
     password: ChangeMe_flyway_2026!
     driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      pool-name: FlywayPool
-      maximum-pool-size: 2
-      minimum-idle: 1
+    pool-name: FlywayPool
+    maximum-pool-size: 2
+    minimum-idle: 1
 
   # ── Disable Spring Boot's auto-configured Flyway (we configure it manually) ──
   flyway:

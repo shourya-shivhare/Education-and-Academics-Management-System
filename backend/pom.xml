@@ -21,7 +21,7 @@
   <packaging>jar</packaging>
 
   <properties>
-    <java.version>25</java.version>
+    <java.version>17</java.version>
     <!-- Flyway version that ships flyway-mysql -->
     <flyway.version>10.12.0</flyway.version>
     <!-- Lombok 1.18.42 supports Java 25 -->
@@ -126,8 +126,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.14.1</version>
         <configuration>
-          <!-- Compile to Java 25 bytecode -->
-          <release>25</release>
+          <!-- Compile to the project's Java 17 minimum for broad runtime compatibility -->
+          <release>17</release>
           <annotationProcessorPaths>
             <path>
               <groupId>org.projectlombok</groupId>

@@ -54,6 +54,7 @@ spring:
 # ── Application-level properties ─────────────────────────────────────────────
 app:
   internal-key: dev-internal-secret-change-me  # X-Internal-Key for the Python service
+  ai-service-url: http://127.0.0.1:8001
   cors:
     # Comma-separated string (not a YAML list) – @Value splits this at runtime
     allowed-origins: "http://localhost:5173,http://localhost:5174"

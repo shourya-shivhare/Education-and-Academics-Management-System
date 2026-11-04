@@ -131,12 +131,12 @@ public class MarksRepository {
                     ", offering=" + r.getOfferingId() +
                     ", assessment=" + r.getAssessmentNo() + ")");
         }
+    }
 
-        public void delete(int enrollmentId, int offeringId, int assessmentNo) {
-            int rows = jdbc.updateTraced(DELETE, enrollmentId, offeringId, assessmentNo);
-            if (rows == 0) {
-                throw new EmptyResultDataAccessException("Marks record not found", 1);
-            }
+    public void delete(int enrollmentId, int offeringId, int assessmentNo) {
+        int rows = jdbc.updateTraced(DELETE, enrollmentId, offeringId, assessmentNo);
+        if (rows == 0) {
+            throw new EmptyResultDataAccessException("Marks record not found", 1);
         }
     }
 

@@ -1,6 +1,7 @@
 package edu.dbms.education.api;
 
 import edu.dbms.education.common.ConflictException;
+import edu.dbms.education.ai.AiServiceUnavailableException;
 import edu.dbms.education.trace.SqlTraceService;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
@@ -210,6 +211,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorEnvelope("INVALID_ARGUMENT", ex.getMessage(),
+                        traceService.getEntries()));
+    }
+
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    public ResponseEntity<ErrorEnvelope> handleAiServiceUnavailable(AiServiceUnavailableException ex) {
+        log.error("AI service request failed", ex);
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorEnvelope("AI_SERVICE_UNAVAILABLE", ex.getMessage(),
                         traceService.getEntries()));
     }
 

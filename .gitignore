@@ -30,6 +30,9 @@ env/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+ai-service/models/
+ai-service/artifacts/
+ai-service/training/.ipynb_checkpoints/
 
 # ---- IDE / OS ----
 .idea/

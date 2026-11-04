@@ -19,16 +19,15 @@ const COLUMNS = [
   { key: 'studentName',   label: 'Student', render: r => r.studentName || `#${r.studentId}` },
   { key: 'rollNo',        label: 'Roll No' },
   { key: 'subjectCode',   label: 'Subject' },
-  { key: 'sectionCode',   label: 'Section' },
   { key: 'termName',      label: 'Term' },
-  { key: 'enrollmentDate',label: 'Enrolled On' },
+  { key: 'enrollDate',    label: 'Enrolled On' },
   { key: 'status',        label: 'Status', render: r => (
     <span className={`badge badge-${r.status?.toLowerCase()}`}>{r.status}</span>
   )},
-  { key: 'finalGrade',    label: 'Grade' },
+  { key: 'grade',         label: 'Grade' },
 ];
 
-const EMPTY_FORM = { studentId: '', offeringId: '', enrollmentDate: '', status: 'Enrolled', finalGrade: '' };
+const EMPTY_FORM = { studentId: '', offeringId: '' };
 
 export default function EnrollmentPage() {
   const [rows, setRows]         = useState([]);
@@ -45,7 +44,6 @@ export default function EnrollmentPage() {
   const [filterStatus, setFilterStatus]     = useState('');
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editRow, setEditRow]   = useState(null);
   const [form, setForm]         = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving]     = useState(false);
@@ -85,12 +83,8 @@ export default function EnrollmentPage() {
       const payload = {
         studentId:  Number(form.studentId),
         offeringId: Number(form.offeringId),
-        enrollmentDate: form.enrollmentDate || undefined,
-        status:     form.status,
-        finalGrade: form.finalGrade || null,
       };
-      if (editRow) await enrollmentApi.update(editRow.enrollmentId, payload);
-      else         await enrollmentApi.create(payload);
+      await enrollmentApi.create(payload);
       setLastTrace(getLatestTrace()); setFormOpen(false); load(page, true);
     } catch (e) {
       const msg = e?.response?.data?.message || e.message;
@@ -115,13 +109,7 @@ export default function EnrollmentPage() {
     } finally { setDeleting(false); }
   };
 
-  const openCreate = () => { setForm(EMPTY_FORM); setFormErrors({}); setEditRow(null); setFormOpen(true); setTriggerError(null); };
-  const openEdit   = (row) => {
-    setForm({ studentId: row.studentId || '', offeringId: row.offeringId || '',
-      enrollmentDate: row.enrollmentDate || '', status: row.status || 'Enrolled', finalGrade: row.finalGrade || '' });
-    setFormErrors({}); setEditRow(row); setFormOpen(true); setTriggerError(null);
-  };
-
+  const openCreate = () => { setForm(EMPTY_FORM); setFormErrors({}); setFormOpen(true); setTriggerError(null); };
   return (
     <PageShell title="Enrollment" subtitle="Manage student course enrollments"
       actions={<button className="btn btn-primary" onClick={openCreate}>+ Enroll Student</button>}>
@@ -134,41 +122,26 @@ export default function EnrollmentPage() {
         <Select value={filterStatus} onChange={setFilterStatus} options={STATUS_OPTIONS} placeholder="All statuses" />
       </SearchBar>
 
-      <DataTable columns={COLUMNS} rows={rows} loading={loading} onEdit={openEdit} onDelete={r => setDeleteTarget(r)} />
+      <DataTable columns={COLUMNS} rows={rows} loading={loading} onDelete={r => setDeleteTarget(r)} />
       <Pagination page={page} pageSize={PAGE_SIZE} total={total} hasNext={rows.length === PAGE_SIZE}
         onPage={p => { setPage(p); load(p); }} />
       {lastTrace && <InlineTrace trace={lastTrace} />}
 
-      <FormModal open={formOpen} title={editRow ? `Edit Enrollment #${editRow.enrollmentId}` : 'Enroll Student'}
+      <FormModal open={formOpen} title="Enroll Student"
         onClose={() => setFormOpen(false)} onSubmit={handleSave} loading={saving}
-        submitLabel={editRow ? 'Save' : 'Enroll'}>
+        submitLabel="Enroll">
         <TriggerAlert message={triggerError} onClose={() => setTriggerError(null)} />
-        {!editRow && (
-          <div className="form-row">
-            <FormField label="Student ID" required error={formErrors.studentId}>
-              <Input type="number" value={form.studentId} onChange={v => setForm(f => ({ ...f, studentId: v }))} />
-            </FormField>
-            <FormField label="Offering ID" required error={formErrors.offeringId}>
-              <Input type="number" value={form.offeringId} onChange={v => setForm(f => ({ ...f, offeringId: v }))} />
-            </FormField>
-          </div>
-        )}
         <div className="form-row">
-          <FormField label="Enrollment Date">
-            <Input type="date" value={form.enrollmentDate} onChange={v => setForm(f => ({ ...f, enrollmentDate: v }))} />
+          <FormField label="Student ID" required error={formErrors.studentId}>
+            <Input type="number" value={form.studentId} onChange={v => setForm(f => ({ ...f, studentId: v }))} />
           </FormField>
-          <FormField label="Status">
-            <Select value={form.status} onChange={v => setForm(f => ({ ...f, status: v }))} options={STATUS_OPTIONS} placeholder="" />
+          <FormField label="Offering ID" required error={formErrors.offeringId}>
+            <Input type="number" value={form.offeringId} onChange={v => setForm(f => ({ ...f, offeringId: v }))} />
           </FormField>
         </div>
-        <FormField label="Final Grade">
-          <Input value={form.finalGrade} onChange={v => setForm(f => ({ ...f, finalGrade: v }))} placeholder="e.g. A, B+, F (set after term ends)" />
-        </FormField>
-        {!editRow && (
-          <p className="form-hint">
-            💡 Tip: The <code>sp_enroll_student</code> stored procedure is called by the backend — it validates capacity and prerequisite rules automatically.
-          </p>
-        )}
+        <p className="form-hint">
+          The <code>sp_enroll_student</code> stored procedure validates capacity and prerequisite rules.
+        </p>
       </FormModal>
 
       <ConfirmDialog open={!!deleteTarget} title="Drop Enrollment"

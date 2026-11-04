@@ -11,23 +11,22 @@ const STATUS_OPTIONS = [
   { value: 'Present', label: 'Present' },
   { value: 'Absent',  label: 'Absent' },
   { value: 'Late',    label: 'Late' },
-  { value: 'Excused', label: 'Excused' },
 ];
 
 const COLUMNS = [
   { key: 'attendanceId',  label: 'ID' },
-  { key: 'studentName',   label: 'Student', render: r => r.studentName || `#${r.studentId}` },
+  { key: 'studentId',     label: 'Student' },
   { key: 'rollNo',        label: 'Roll No' },
   { key: 'subjectCode',   label: 'Subject' },
   { key: 'classDate',     label: 'Date' },
   { key: 'status',        label: 'Status', render: r => (
     <span className={`badge badge-attendance-${r.status?.toLowerCase()}`}>{r.status}</span>
   )},
-  { key: 'remarks',       label: 'Remarks' },
+  { key: 'offeringSection', label: 'Section' },
 ];
 
 const EMPTY_FORM = {
-  enrollmentId: '', offeringId: '', classDate: '', status: 'Present', remarks: '',
+  enrollmentId: '', classDate: '', status: 'Present',
 };
 
 export default function AttendancePage() {
@@ -92,7 +91,6 @@ export default function AttendancePage() {
           enrollmentId: Number(form.enrollmentId),
           classDate:    form.classDate,
           status:       form.status,
-          remarks:      form.remarks || null,
         });
       }
       setLastTrace(getLatestTrace()); setFormOpen(false); load(page, true);
@@ -117,7 +115,7 @@ export default function AttendancePage() {
 
   const openCreate = () => { setForm(EMPTY_FORM); setFormErrors({}); setEditRow(null); setFormOpen(true); setTriggerError(null); };
   const openEdit   = (row) => {
-    setForm({ ...EMPTY_FORM, enrollmentId: row.enrollmentId, classDate: row.classDate, status: row.status, remarks: row.remarks || '' });
+    setForm({ ...EMPTY_FORM, enrollmentId: row.enrollmentId, classDate: row.classDate, status: row.status });
     setFormErrors({}); setEditRow(row); setFormOpen(true); setTriggerError(null);
   };
 
@@ -156,23 +154,18 @@ export default function AttendancePage() {
         )}
         {editRow && (
           <p className="form-hint">
-            Editing attendance #{editRow.attendanceId} for {editRow.studentName || `student #${editRow.studentId}`} on {editRow.classDate}. Only status can be changed.
+            Editing attendance #{editRow.attendanceId} for student #{editRow.studentId} on {editRow.classDate}. Only status can be changed.
           </p>
         )}
         <div className="form-row">
           <FormField label="Status">
             <Select value={form.status} onChange={v => setForm(f => ({ ...f, status: v }))} options={STATUS_OPTIONS} placeholder="" />
           </FormField>
-          {!editRow && (
-            <FormField label="Remarks">
-              <Input value={form.remarks} onChange={v => setForm(f => ({ ...f, remarks: v }))} placeholder="Optional note" />
-            </FormField>
-          )}
         </div>
       </FormModal>
 
       <ConfirmDialog open={!!deleteTarget} title="Delete Attendance Record"
-        message={`Delete attendance record #${deleteTarget?.attendanceId} (${deleteTarget?.studentName || 'student'} on ${deleteTarget?.classDate})?`}
+        message={`Delete attendance record #${deleteTarget?.attendanceId} (student #${deleteTarget?.studentId} on ${deleteTarget?.classDate})?`}
         onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />
     </PageShell>
   );

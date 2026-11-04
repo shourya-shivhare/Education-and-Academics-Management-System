@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pandas
+numpy
+scikit-learn
+imbalanced-learn
+shap
+sqlalchemy
+pymysql
+joblib
+matplotlib
+seaborn
+python-dotenv
+pydantic

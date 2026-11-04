@@ -14,6 +14,11 @@ import OfferingsPage  from './pages/OfferingsPage';
 import EnrollmentPage from './pages/EnrollmentPage';
 import AttendancePage from './pages/AttendancePage';
 import MarksPage      from './pages/MarksPage';
+import ReportsPage from './pages/ReportsPage';
+import SchemaPage from './pages/SchemaPage';
+import LabPage from './pages/LabPage';
+import ConsolePage from './pages/ConsolePage';
+import RiskPage from './pages/RiskPage';
 
 /**
  * App – top-level router.
@@ -34,7 +39,7 @@ import MarksPage      from './pages/MarksPage';
  *     /labs/acid    – stub (Prompt 18)
  *     /labs/concurrency – stub (Prompt 18)
  *     /schema       – stub (Prompt 18) – the "View ER / Schema" target
- *     /risk         – stub (Prompt 22)
+ *     /risk         – internal ML risk prediction dashboard
  *     /console      – stub (ADMIN only, Prompt 18)
  */
 export default function App() {
@@ -60,12 +65,12 @@ export default function App() {
                 <Route path="/attendance"       element={<AttendancePage />} />
                 <Route path="/marks"            element={<MarksPage />} />
                 <Route path="/transcript"       element={<ComingSoon title="My Transcript" />} />
-                <Route path="/reports"          element={<ComingSoon title="Reports" />} />
-                <Route path="/labs/acid"        element={<ComingSoon title="ACID Lab" />} />
-                <Route path="/labs/concurrency" element={<ComingSoon title="Concurrency Lab" />} />
-                <Route path="/schema"           element={<ComingSoon title="Schema / ER Diagram" />} />
-                <Route path="/risk"             element={<ComingSoon title="AI Risk Dashboard" />} />
-                <Route path="/console"          element={<ComingSoon title="SQL Console (Admin)" />} />
+                <Route path="/reports"          element={<ReportsPage />} />
+                <Route path="/labs/acid"        element={<LabPage kind="acid" />} />
+                <Route path="/labs/concurrency" element={<LabPage kind="concurrency" />} />
+                <Route path="/schema"           element={<SchemaPage />} />
+                <Route path="/risk"             element={<RiskPage />} />
+                <Route path="/console"          element={<ConsolePage />} />
 
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
@@ -78,8 +83,7 @@ export default function App() {
 }
 
 /**
- * ComingSoon – placeholder for pages added in later prompts.
- * Shows the page title and which prompt implements it.
+ * ComingSoon – placeholder for routes not yet implemented.
  */
 function ComingSoon({ title }) {
   return (

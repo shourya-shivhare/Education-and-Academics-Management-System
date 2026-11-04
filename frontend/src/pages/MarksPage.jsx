@@ -9,16 +9,15 @@ import { getLatestTrace } from '../store/traceStore';
 
 const COLUMNS = [
   { key: 'enrollmentId',  label: 'Enrollment' },
-  { key: 'studentName',   label: 'Student', render: r => r.studentName || `#${r.studentId}` },
+  { key: 'studentId',     label: 'Student' },
   { key: 'rollNo',        label: 'Roll No' },
   { key: 'assessmentNo',  label: 'Assessment #' },
-  { key: 'assessmentName',label: 'Assessment' },
+  { key: 'assessmentTitle', label: 'Assessment' },
   { key: 'marksObtained', label: 'Obtained' },
   { key: 'maxMarks',      label: 'Max' },
   { key: 'percentage',    label: '%', render: r =>
     r.maxMarks ? `${((r.marksObtained / r.maxMarks) * 100).toFixed(1)}%` : '—'
   },
-  { key: 'gradePoint',    label: 'Grade Pt' },
   { key: 'version',       label: 'ver', render: r => (
     <code className="version-badge">v{r.version ?? 0}</code>
   )},
@@ -26,7 +25,7 @@ const COLUMNS = [
 
 const EMPTY_FORM = {
   enrollmentId: '', offeringId: '', assessmentNo: '',
-  marksObtained: '', maxMarks: '', version: null,
+  marksObtained: '', version: null,
 };
 
 export default function MarksPage() {
@@ -88,7 +87,6 @@ export default function MarksPage() {
         offeringId:    Number(form.offeringId),
         assessmentNo:  Number(form.assessmentNo),
         marksObtained: parseFloat(form.marksObtained),
-        maxMarks:      form.maxMarks ? parseFloat(form.maxMarks) : null,
         version:       form.version !== null && form.version !== '' ? Number(form.version) : null,
       });
       setLastTrace(getLatestTrace()); setFormOpen(false); load(page, true);
@@ -157,7 +155,7 @@ export default function MarksPage() {
     setForm({
       enrollmentId: row.enrollmentId, offeringId: row.offeringId,
       assessmentNo: row.assessmentNo, marksObtained: row.marksObtained,
-      maxMarks: row.maxMarks ?? '', version: row.version ?? 0,
+      version: row.version ?? 0,
     });
     setFormErrors({}); setEditRow(row); setFormOpen(true);
     setTriggerError(null); setConflictError(null);
@@ -217,16 +215,10 @@ export default function MarksPage() {
           </div>
         )}
 
-        <div className="form-row">
-          <FormField label="Marks Obtained" required error={formErrors.marksObtained}>
+        <FormField label="Marks Obtained" required error={formErrors.marksObtained}>
             <Input type="number" min="0" step="0.5" value={form.marksObtained}
               onChange={v => setForm(f => ({ ...f, marksObtained: v }))} placeholder="e.g. 42.5" />
-          </FormField>
-          <FormField label="Max Marks">
-            <Input type="number" min="1" step="0.5" value={form.maxMarks}
-              onChange={v => setForm(f => ({ ...f, maxMarks: v }))} placeholder="e.g. 50" />
-          </FormField>
-        </div>
+        </FormField>
 
         {editRow && (
           <p className="form-hint">

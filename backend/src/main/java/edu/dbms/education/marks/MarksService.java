@@ -43,6 +43,12 @@ public class MarksService {
                         " offering=" + offeringId + " assessment=" + assessmentNo));
     }
 
+    @Transactional
+    public void delete(int enrollmentId, int offeringId, int assessmentNo) {
+        assertFacultyOwnership(offeringId);
+        repo.delete(enrollmentId, offeringId, assessmentNo);
+    }
+
     @Transactional(readOnly = true)
     public List<MarksDto> search(Integer offeringId, Integer enrollmentId,
                                  Integer studentId, PageRequest page) {

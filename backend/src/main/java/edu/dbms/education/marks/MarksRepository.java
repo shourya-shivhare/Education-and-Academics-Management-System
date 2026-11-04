@@ -62,6 +62,10 @@ public class MarksRepository {
             " SET marks_obtained = ?, version = version + 1" +
             " WHERE enrollment_id = ? AND offering_id = ? AND assessment_no = ? AND version = ?";
 
+    private static final String DELETE =
+            "DELETE FROM marks" +
+            " WHERE enrollment_id = ? AND offering_id = ? AND assessment_no = ?";
+
     private static final String BASE_SELECT =
             "SELECT m.enrollment_id, m.offering_id, m.assessment_no," +
             "  a.title AS assessment_title, a.max_marks, a.weightage," +
@@ -126,6 +130,13 @@ public class MarksRepository {
                     "Refresh and retry. (enrollment=" + r.getEnrollmentId() +
                     ", offering=" + r.getOfferingId() +
                     ", assessment=" + r.getAssessmentNo() + ")");
+        }
+
+        public void delete(int enrollmentId, int offeringId, int assessmentNo) {
+            int rows = jdbc.updateTraced(DELETE, enrollmentId, offeringId, assessmentNo);
+            if (rows == 0) {
+                throw new EmptyResultDataAccessException("Marks record not found", 1);
+            }
         }
     }
 

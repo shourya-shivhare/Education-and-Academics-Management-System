@@ -6,7 +6,7 @@ import {
   InlineTrace, FormField, Input, Select,
 } from '../components/EntityComponents';
 import TracePanel from '../components/TracePanel';
-import { useTrace } from '../store/TraceContext';
+import { getLatestTrace } from '../store/traceStore';
 
 const STATUS_OPTIONS = [
   { value: 'Active',    label: 'Active' },
@@ -36,7 +36,6 @@ const EMPTY_FORM = {
 };
 
 export default function StudentsPage() {
-  const { trace: globalTrace } = useTrace();
   const [rows, setRows]             = useState([]);
   const [loading, setLoading]       = useState(false);
   const [lastTrace, setLastTrace]   = useState(null);
@@ -61,10 +60,10 @@ export default function StudentsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting]     = useState(false);
 
-  const load = useCallback(async (p = page) => {
+  const load = useCallback(async (p = page, preserveTrace = false) => {
     setLoading(true);
     setError(null);
-    setLastTrace(null);
+    if (!preserveTrace) setLastTrace(null);
     try {
       const data = await studentsApi.search({
         name: searchName || undefined,
@@ -73,13 +72,13 @@ export default function StudentsPage() {
       });
       setRows(Array.isArray(data) ? data : []);
       setTotal(Array.isArray(data) ? data.length : 0);
-      setLastTrace(globalTrace);
+      if (!preserveTrace) setLastTrace(getLatestTrace());
     } catch (e) {
       setError(e?.response?.data?.message || e.message);
     } finally {
       setLoading(false);
     }
-  }, [page, searchName, filterStatus, globalTrace]);
+  }, [page, searchName, filterStatus]);
 
   useEffect(() => { load(0); }, []); // initial load
 
@@ -165,15 +164,15 @@ export default function StudentsPage() {
           currentSemester: Number(form.currentSemester),
         });
       }
-      setLastTrace(globalTrace);
+      setLastTrace(getLatestTrace());
       setFormOpen(false);
-      load(page);
+      load(page, true);
     } catch (e) {
       const status = e?.response?.status;
       const msg    = e?.response?.data?.message || e.message;
       if (status === 409) setTriggerError(msg);
       else setError(msg);
-      setLastTrace(globalTrace);
+      setLastTrace(getLatestTrace());
     } finally {
       setSaving(false);
     }
@@ -184,14 +183,14 @@ export default function StudentsPage() {
     setLastTrace(null);
     try {
       await studentsApi.delete(deleteTarget.studentId);
-      setLastTrace(globalTrace);
+      setLastTrace(getLatestTrace());
       setDeleteTarget(null);
-      load(page);
+      load(page, true);
     } catch (e) {
       const msg = e?.response?.data?.message || e.message;
       if (e?.response?.status === 409) setTriggerError(msg);
       else setError(msg);
-      setLastTrace(globalTrace);
+      setLastTrace(getLatestTrace());
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -229,7 +228,8 @@ export default function StudentsPage() {
         onDelete={row => setDeleteTarget(row)}
         emptyMsg="No students found. Try a different search."
       />
-      <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={p => { setPage(p); load(p); }} />
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} hasNext={rows.length === PAGE_SIZE}
+        onPage={p => { setPage(p); load(p); }} />
 
       {/* Inline Trace after search */}
       {lastTrace && <InlineTrace trace={lastTrace} />}

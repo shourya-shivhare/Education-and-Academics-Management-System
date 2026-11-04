@@ -5,7 +5,7 @@ import {
   ConfirmDialog, FormModal, TriggerAlert, ErrorAlert,
   InlineTrace, FormField, Input, Select,
 } from '../components/EntityComponents';
-import { useTrace } from '../store/TraceContext';
+import { getLatestTrace } from '../store/traceStore';
 
 const STATUS_OPTIONS = [
   { value: 'Planned',   label: 'Planned' },
@@ -34,7 +34,6 @@ const EMPTY_FORM = {
 };
 
 export default function OfferingsPage() {
-  const { trace: globalTrace } = useTrace();
   const [rows, setRows]         = useState([]);
   const [loading, setLoading]   = useState(false);
   const [lastTrace, setLastTrace] = useState(null);
@@ -56,8 +55,8 @@ export default function OfferingsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(async (p = page) => {
-    setLoading(true); setError(null); setLastTrace(null);
+  const load = useCallback(async (p = page, preserveTrace = false) => {
+    setLoading(true); setError(null); if (!preserveTrace) setLastTrace(null);
     try {
       const data = await offeringsApi.search({
         termId: filterTerm || undefined,
@@ -67,10 +66,10 @@ export default function OfferingsPage() {
       });
       setRows(Array.isArray(data) ? data : []);
       setTotal(Array.isArray(data) ? data.length : 0);
-      setLastTrace(globalTrace);
+      if (!preserveTrace) setLastTrace(getLatestTrace());
     } catch (e) { setError(e?.response?.data?.message || e.message); }
     finally { setLoading(false); }
-  }, [page, filterTerm, filterStatus, filterSubject, globalTrace]);
+  }, [page, filterTerm, filterStatus, filterSubject]);
 
   useEffect(() => { load(0); }, []);
 
@@ -100,11 +99,11 @@ export default function OfferingsPage() {
       };
       if (editRow) await offeringsApi.update(editRow.offeringId, payload);
       else         await offeringsApi.create(payload);
-      setLastTrace(globalTrace); setFormOpen(false); load(page);
+      setLastTrace(getLatestTrace()); setFormOpen(false); load(page, true);
     } catch (e) {
       const msg = e?.response?.data?.message || e.message;
       if (e?.response?.status === 409) setTriggerError(msg); else setError(msg);
-      setLastTrace(globalTrace);
+      setLastTrace(getLatestTrace());
     } finally { setSaving(false); }
   };
 
@@ -112,11 +111,11 @@ export default function OfferingsPage() {
     setDeleting(true); setLastTrace(null);
     try {
       await offeringsApi.delete(deleteTarget.offeringId);
-      setLastTrace(globalTrace); setDeleteTarget(null); load(page);
+      setLastTrace(getLatestTrace()); setDeleteTarget(null); load(page, true);
     } catch (e) {
       const msg = e?.response?.data?.message || e.message;
       if (e?.response?.status === 409) setTriggerError(msg); else setError(msg);
-      setLastTrace(globalTrace); setDeleteTarget(null);
+      setLastTrace(getLatestTrace()); setDeleteTarget(null);
     } finally { setDeleting(false); }
   };
 
@@ -141,7 +140,8 @@ export default function OfferingsPage() {
       </SearchBar>
 
       <DataTable columns={COLUMNS} rows={rows} loading={loading} onEdit={openEdit} onDelete={r => setDeleteTarget(r)} />
-      <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={p => { setPage(p); load(p); }} />
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} hasNext={rows.length === PAGE_SIZE}
+        onPage={p => { setPage(p); load(p); }} />
       {lastTrace && <InlineTrace trace={lastTrace} />}
 
       <FormModal open={formOpen} title={editRow ? `Edit Offering #${editRow.offeringId}` : 'Add Course Offering'}

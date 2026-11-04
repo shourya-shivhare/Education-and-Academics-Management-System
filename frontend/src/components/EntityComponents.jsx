@@ -111,7 +111,7 @@ export function DataTable({ columns, rows, onEdit, onDelete, loading, emptyMsg =
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
-export function Pagination({ page, pageSize, total, onPage }) {
+export function Pagination({ page, pageSize, total, hasNext, onPage }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   return (
     <div className="pagination-bar">
@@ -122,7 +122,9 @@ export function Pagination({ page, pageSize, total, onPage }) {
         <button className="btn btn-sm btn-outline" disabled={page === 0} onClick={() => onPage(page - 1)}>
           ← Prev
         </button>
-        <button className="btn btn-sm btn-outline" disabled={page + 1 >= totalPages} onClick={() => onPage(page + 1)}>
+        <button className="btn btn-sm btn-outline"
+          disabled={hasNext === undefined ? page + 1 >= totalPages : !hasNext}
+          onClick={() => onPage(page + 1)}>
           Next →
         </button>
       </div>

@@ -15,6 +15,7 @@
 
 /** @type {((trace: object[]) => void) | null} */
 let _callback = null;
+let _latestTrace = [];
 
 /**
  * Register the React state-setter from TraceContext.
@@ -32,7 +33,12 @@ export function registerTraceCallback(fn) {
  * @param {object[]} trace – array of { sql, params, rowsAffected, timeMs }
  */
 export function notifyTrace(trace) {
+  _latestTrace = Array.isArray(trace) ? trace : [];
   if (_callback) {
-    _callback(Array.isArray(trace) ? trace : []);
+    _callback(_latestTrace);
   }
+}
+
+export function getLatestTrace() {
+  return _latestTrace;
 }

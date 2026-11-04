@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { marksApi } from '../api/entities';
 import {
   PageShell, DataTable, Pagination,
-  FormModal, TriggerAlert, ErrorAlert, ConflictAlert,
+  ConfirmDialog, FormModal, TriggerAlert, ErrorAlert, ConflictAlert,
   InlineTrace, FormField, Input,
 } from '../components/EntityComponents';
-import { useTrace } from '../store/TraceContext';
+import { getLatestTrace } from '../store/traceStore';
 
 const COLUMNS = [
   { key: 'enrollmentId',  label: 'Enrollment' },
@@ -30,7 +30,6 @@ const EMPTY_FORM = {
 };
 
 export default function MarksPage() {
-  const { trace: globalTrace } = useTrace();
   const [rows, setRows]         = useState([]);
   const [loading, setLoading]   = useState(false);
   const [lastTrace, setLastTrace] = useState(null);
@@ -49,9 +48,11 @@ export default function MarksPage() {
   const [form, setForm]         = useState(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState({});
   const [saving, setSaving]     = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(async (p = page) => {
-    setLoading(true); setError(null); setLastTrace(null);
+  const load = useCallback(async (p = page, preserveTrace = false) => {
+    setLoading(true); setError(null); if (!preserveTrace) setLastTrace(null);
     try {
       const data = await marksApi.search({
         offeringId: filterOffering || undefined,
@@ -60,10 +61,10 @@ export default function MarksPage() {
       });
       setRows(Array.isArray(data) ? data : []);
       setTotal(Array.isArray(data) ? data.length : 0);
-      setLastTrace(globalTrace);
+      if (!preserveTrace) setLastTrace(getLatestTrace());
     } catch (e) { setError(e?.response?.data?.message || e.message); }
     finally { setLoading(false); }
-  }, [page, filterOffering, filterStudent, globalTrace]);
+  }, [page, filterOffering, filterStudent]);
 
   useEffect(() => { load(0); }, []);
 
@@ -90,22 +91,41 @@ export default function MarksPage() {
         maxMarks:      form.maxMarks ? parseFloat(form.maxMarks) : null,
         version:       form.version !== null && form.version !== '' ? Number(form.version) : null,
       });
-      setLastTrace(globalTrace); setFormOpen(false); load(page);
+      setLastTrace(getLatestTrace()); setFormOpen(false); load(page, true);
     } catch (e) {
       const status = e?.response?.status;
       const msg    = e?.response?.data?.message || e.message;
       if (status === 409 && form.version !== null) {
         // Optimistic lock conflict
         setConflictError(msg);
-        setLastTrace(globalTrace);
+        setLastTrace(getLatestTrace());
       } else if (status === 409) {
         setTriggerError(msg);
-        setLastTrace(globalTrace);
+        setLastTrace(getLatestTrace());
       } else {
         setError(msg);
-        setLastTrace(globalTrace);
+        setLastTrace(getLatestTrace());
       }
     } finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true); setLastTrace(null);
+    try {
+      await marksApi.delete({
+        enrollmentId: deleteTarget.enrollmentId,
+        offeringId: deleteTarget.offeringId,
+        assessmentNo: deleteTarget.assessmentNo,
+      });
+      setLastTrace(getLatestTrace());
+      setDeleteTarget(null);
+      load(page, true);
+    } catch (e) {
+      const msg = e?.response?.data?.message || e.message;
+      if (e?.response?.status === 409) setTriggerError(msg); else setError(msg);
+      setLastTrace(getLatestTrace());
+      setDeleteTarget(null);
+    } finally { setDeleting(false); }
   };
 
   /**
@@ -155,8 +175,10 @@ export default function MarksPage() {
         <button className="btn btn-primary" onClick={() => { setPage(0); load(0); }}>🔍 Filter</button>
       </div>
 
-      <DataTable columns={COLUMNS} rows={rows} loading={loading} onEdit={openEdit} />
-      <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={p => { setPage(p); load(p); }} />
+      <DataTable columns={COLUMNS} rows={rows} loading={loading} onEdit={openEdit}
+        onDelete={row => setDeleteTarget(row)} />
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} hasNext={rows.length === PAGE_SIZE}
+        onPage={p => { setPage(p); load(p); }} />
       {lastTrace && <InlineTrace trace={lastTrace} />}
 
       <FormModal open={formOpen}
@@ -212,6 +234,10 @@ export default function MarksPage() {
           </p>
         )}
       </FormModal>
+
+      <ConfirmDialog open={!!deleteTarget} title="Delete Marks Record"
+        message={`Delete marks for enrollment #${deleteTarget?.enrollmentId}, assessment #${deleteTarget?.assessmentNo}?`}
+        onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />
     </PageShell>
   );
 }

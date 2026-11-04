@@ -43,6 +43,16 @@ public class MarksController {
                 .body(ResponseEnvelope.ok(dto, trace.getEntries()));
     }
 
+    @DeleteMapping
+    @PreAuthorize("hasAnyRole('ADMIN','FACULTY')")
+    public ResponseEntity<ResponseEnvelope<Void>> delete(
+            @RequestParam int enrollmentId,
+            @RequestParam int offeringId,
+            @RequestParam int assessmentNo) {
+        service.delete(enrollmentId, offeringId, assessmentNo);
+        return ResponseEntity.ok(ResponseEnvelope.ok(null, trace.getEntries()));
+    }
+
     /**
      * GET by composite PK.
      * STUDENT can read their own marks (studentId check in service).

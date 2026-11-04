@@ -5,7 +5,7 @@ import {
   ConfirmDialog, FormModal, TriggerAlert, ErrorAlert,
   InlineTrace, FormField, Input, Select,
 } from '../components/EntityComponents';
-import { useTrace } from '../store/TraceContext';
+import { getLatestTrace } from '../store/traceStore';
 
 const STATUS_OPTIONS = [
   { value: 'Enrolled',   label: 'Enrolled' },
@@ -31,7 +31,6 @@ const COLUMNS = [
 const EMPTY_FORM = { studentId: '', offeringId: '', enrollmentDate: '', status: 'Enrolled', finalGrade: '' };
 
 export default function EnrollmentPage() {
-  const { trace: globalTrace } = useTrace();
   const [rows, setRows]         = useState([]);
   const [loading, setLoading]   = useState(false);
   const [lastTrace, setLastTrace] = useState(null);
@@ -53,8 +52,8 @@ export default function EnrollmentPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const load = useCallback(async (p = page) => {
-    setLoading(true); setError(null); setLastTrace(null);
+  const load = useCallback(async (p = page, preserveTrace = false) => {
+    setLoading(true); setError(null); if (!preserveTrace) setLastTrace(null);
     try {
       const data = await enrollmentApi.search({
         studentId:  filterStudent || undefined,
@@ -64,10 +63,10 @@ export default function EnrollmentPage() {
       });
       setRows(Array.isArray(data) ? data : []);
       setTotal(Array.isArray(data) ? data.length : 0);
-      setLastTrace(globalTrace);
+      if (!preserveTrace) setLastTrace(getLatestTrace());
     } catch (e) { setError(e?.response?.data?.message || e.message); }
     finally { setLoading(false); }
-  }, [page, filterStudent, filterOffering, filterStatus, globalTrace]);
+  }, [page, filterStudent, filterOffering, filterStatus]);
 
   useEffect(() => { load(0); }, []);
 
@@ -92,23 +91,27 @@ export default function EnrollmentPage() {
       };
       if (editRow) await enrollmentApi.update(editRow.enrollmentId, payload);
       else         await enrollmentApi.create(payload);
-      setLastTrace(globalTrace); setFormOpen(false); load(page);
+      setLastTrace(getLatestTrace()); setFormOpen(false); load(page, true);
     } catch (e) {
       const msg = e?.response?.data?.message || e.message;
       if (e?.response?.status === 409) setTriggerError(msg); else setError(msg);
-      setLastTrace(globalTrace);
+      setLastTrace(getLatestTrace());
     } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     setDeleting(true); setLastTrace(null);
     try {
-      await enrollmentApi.delete(deleteTarget.enrollmentId);
-      setLastTrace(globalTrace); setDeleteTarget(null); load(page);
+      // Backend uses sp_drop_enrollment via DELETE /enrollments with {studentId, offeringId}
+      await enrollmentApi.drop({
+        studentId: deleteTarget.studentId,
+        offeringId: deleteTarget.offeringId,
+      });
+      setLastTrace(getLatestTrace()); setDeleteTarget(null); load(page, true);
     } catch (e) {
       const msg = e?.response?.data?.message || e.message;
       if (e?.response?.status === 409) setTriggerError(msg); else setError(msg);
-      setLastTrace(globalTrace); setDeleteTarget(null);
+      setLastTrace(getLatestTrace()); setDeleteTarget(null);
     } finally { setDeleting(false); }
   };
 
@@ -132,7 +135,8 @@ export default function EnrollmentPage() {
       </SearchBar>
 
       <DataTable columns={COLUMNS} rows={rows} loading={loading} onEdit={openEdit} onDelete={r => setDeleteTarget(r)} />
-      <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={p => { setPage(p); load(p); }} />
+      <Pagination page={page} pageSize={PAGE_SIZE} total={total} hasNext={rows.length === PAGE_SIZE}
+        onPage={p => { setPage(p); load(p); }} />
       {lastTrace && <InlineTrace trace={lastTrace} />}
 
       <FormModal open={formOpen} title={editRow ? `Edit Enrollment #${editRow.enrollmentId}` : 'Enroll Student'}

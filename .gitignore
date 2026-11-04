@@ -54,3 +54,7 @@ logs/
 mysql-data/
 *.dump
 *.bak
+
+# ---- Local project planning documents ----
+Education and Academics Management System Project Requirements.md
+Implementation Plan Education and Academics Management System.md

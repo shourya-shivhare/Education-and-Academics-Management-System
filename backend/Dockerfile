@@ -9,7 +9,7 @@
 # =============================================================================
 
 # ── Stage 1: build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jdk-jammy AS builder
+FROM eclipse-temurin:25-jdk-jammy AS builder
 
 WORKDIR /build
 
@@ -33,7 +33,7 @@ COPY src/ src/
 RUN ./mvnw package -DskipTests -B --no-transfer-progress
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jre-jammy AS runtime
+FROM eclipse-temurin:25-jre-jammy AS runtime
 
 # Non-root user for security best practice
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser

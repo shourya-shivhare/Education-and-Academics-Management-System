@@ -21,11 +21,11 @@
   <packaging>jar</packaging>
 
   <properties>
-    <java.version>17</java.version>
+    <java.version>25</java.version>
     <!-- Flyway version that ships flyway-mysql -->
     <flyway.version>10.12.0</flyway.version>
-    <!-- Lombok 1.18.32+ supports Java 21/24 -->
-    <lombok.version>1.18.32</lombok.version>
+    <!-- Lombok 1.18.42 supports Java 25 -->
+    <lombok.version>1.18.42</lombok.version>
   </properties>
 
   <dependencies>
@@ -99,7 +99,7 @@
     </dependency>
 
     <!-- ── Lombok (optional, reduces boilerplate) ─────────────── -->
-    <!-- Pinned to 1.18.32 which fully supports JDK 21/24        -->
+    <!-- Pinned to 1.18.42 which supports JDK 25                  -->
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
@@ -116,7 +116,7 @@
 
       <!--
         maven-compiler-plugin: explicit annotationProcessorPaths is required
-        when running javac from JDK 17+ (and especially JDK 21/24) because
+        when running javac from JDK 17+ (and especially JDK 25) because
         the module system no longer discovers annotation processors from the
         regular classpath.  Without this, Lombok generates nothing and we get
         "cannot find symbol: method getXxx()" errors.
@@ -124,9 +124,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.1</version>
         <configuration>
-          <!-- Compile to Java 17 bytecode even when run on JDK 24 -->
-          <release>17</release>
+          <!-- Compile to Java 25 bytecode -->
+          <release>25</release>
           <annotationProcessorPaths>
             <path>
               <groupId>org.projectlombok</groupId>

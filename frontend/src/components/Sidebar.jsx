@@ -11,7 +11,7 @@ import { useAuth } from '../auth/AuthContext';
  *   Student    – own enrollment, attendance, marks, transcript
  *
  * Every role sees the "Schema / ER" entry (Prompt 16 requirement).
- * Entries for pages not yet built render as stubs (ComingSoon) in App.jsx.
+ * Every configured entry maps to a working protected route.
  */
 
 const NAV_CONFIG = {

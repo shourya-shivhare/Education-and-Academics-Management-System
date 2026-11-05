@@ -6,6 +6,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 /**
  * Inserts demo users (Faculty, Student, Registrar) on first startup.
@@ -38,23 +39,51 @@ public class DataInitializer implements CommandLineRunner {
 
     private static final String INSERT_SQL =
             "INSERT IGNORE INTO users (username, password_hash, `role`, is_active, person_id) " +
-            "VALUES (?, ?, ?, TRUE, NULL)";
+            "VALUES (?, ?, ?, TRUE, ?)";
+
+    private static final String FIRST_STUDENT =
+            "SELECT student_id FROM student ORDER BY student_id LIMIT 1";
+    private static final String FIRST_FACULTY =
+            "SELECT faculty_id FROM faculty ORDER BY faculty_id LIMIT 1";
+    private static final String LINK_PERSON =
+            "UPDATE users SET person_id = ? WHERE username = ? AND person_id IS NULL";
 
     @Override
     public void run(String... args) {
-        insertIfAbsent("faculty1",   "faculty123",  "Faculty");
-        insertIfAbsent("student1",   "student123",  "Student");
-        insertIfAbsent("registrar1", "reg123",      "Registrar");
+        ensureAdmin();
+        insertIfAbsent("faculty1", "faculty123", "Faculty", firstPerson(FIRST_FACULTY));
+        insertIfAbsent("student1", "student123", "Student", firstPerson(FIRST_STUDENT));
+        insertIfAbsent("registrar1", "reg123", "Registrar", null);
     }
 
-    private void insertIfAbsent(String username, String rawPassword, String role) {
+    private void ensureAdmin() {
+        jdbc.update(
+                "UPDATE users SET password_hash = ?, is_active = TRUE " +
+                        "WHERE username = ? AND `role` = ?",
+                passwordEncoder.encode("admin123"), "admin", "Admin");
+    }
+
+    private Integer firstPerson(String sql) {
+        try {
+            return jdbc.queryForObject(sql, Integer.class);
+        } catch (EmptyResultDataAccessException ex) {
+            log.warn("No demo person exists for SQL: {}", sql);
+            return null;
+        }
+    }
+
+    private void insertIfAbsent(String username, String rawPassword, String role, Integer personId) {
         // INSERT IGNORE: no-op if the username already exists
         int rows = jdbc.update(
                 INSERT_SQL,
                 username,
                 passwordEncoder.encode(rawPassword),  // real BCrypt hash
-                role
+                role,
+                personId
         );
+        if (personId != null) {
+            jdbc.update(LINK_PERSON, personId, username);
+        }
         if (rows > 0) {
             log.info("DataInitializer: inserted demo user '{}' (role={})", username, role);
         }

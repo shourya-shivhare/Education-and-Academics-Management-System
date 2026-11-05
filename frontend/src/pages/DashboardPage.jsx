@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { reportsApi } from '../api/entities';
 import { useAuth } from '../auth/AuthContext';
 import { useTrace } from '../store/TraceContext';
 import TracePanel from '../components/TracePanel';
@@ -96,18 +97,9 @@ export default function DashboardPage() {
   const { trace, clearTrace } = useTrace();
   const [health, setHealth]   = useState(null);
   const [busy,   setBusy]     = useState(false);
+  const [chartData, setChartData] = useState([]);
 
   const meta = ROLE_META[user?.role] ?? ROLE_META.Student;
-
-  // Placeholder chart data (term-wise enrollment trend)
-  const chartData = [
-    { term: '2023-ODD', enrollments: 1240 },
-    { term: '2023-EVN', enrollments: 1310 },
-    { term: '2024-ODD', enrollments: 1420 },
-    { term: '2024-EVN', enrollments: 1390 },
-    { term: '2025-ODD', enrollments: 1560 },
-    { term: '2025-EVN', enrollments: 1480 },
-  ];
 
   // Ping /api/health on mount to populate the TracePanel
   useEffect(() => {
@@ -117,6 +109,18 @@ export default function DashboardPage() {
         setHealth(data);
       } catch {
         // backend might not be up yet – fail silently on dashboard
+      }
+      try {
+        const rows = await reportsApi.departmentPerformance();
+        const list = Array.isArray(rows) ? rows : [];
+        setChartData(list.slice(0, 8).map(row => {
+          const keys = Object.keys(row);
+          const labelKey = keys.find(key => /department|name/i.test(key)) || keys[0];
+          const valueKey = keys.find(key => /gpa|cgpa|average|performance|marks|score|percentage/i.test(key)) || keys[1];
+          return { label: row[labelKey] || 'Department', value: Number(row[valueKey] || 0) };
+        }));
+      } catch {
+        setChartData([]);
       }
     })();
   }, []);
@@ -288,15 +292,15 @@ export default function DashboardPage() {
 
         {/* Enrollment trend chart (Recharts) */}
         <div className="dash-card" style={{ gridColumn: 'span 2' }}>
-          <h3>📊 Term-wise Enrollment Trend (Recharts · placeholder data)</h3>
+          <h3>📊 Department performance</h3>
           <p style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 14 }}>
-            Real data from the Reports page (Prompt 18). Chart uses <code>recharts</code>.
+            Use Reports for live database-backed charts and parameterized query results.
           </p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} margin={{ top: 4, right: 10, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,.1)" />
               <XAxis
-                dataKey="term"
+                dataKey="label"
                 tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
                 axisLine={{ stroke: 'var(--border)' }}
                 tickLine={false}
@@ -307,7 +311,7 @@ export default function DashboardPage() {
                 tickLine={false}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(99,102,241,.06)' }} />
-              <Bar dataKey="enrollments" name="Enrollments" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="value" name="Performance" radius={[4, 4, 0, 0]}>
                 {chartData.map((_, idx) => (
                   <Cell key={idx} fill={BAR_COLORS[idx % BAR_COLORS.length]} />
                 ))}

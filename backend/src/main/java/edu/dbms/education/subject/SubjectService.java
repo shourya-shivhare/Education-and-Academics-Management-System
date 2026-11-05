@@ -28,8 +28,8 @@ public class SubjectService {
 
     @Transactional(readOnly = true)
     public List<SubjectDto> search(String keyword, Integer departmentId,
-                                   Integer programId, Integer semester, PageRequest page) {
-        return repo.search(keyword, departmentId, programId, semester, page);
+                                   Integer programId, Integer semester, String mode, PageRequest page) {
+        return repo.search(keyword, departmentId, programId, semester, mode, page);
     }
 
     @Transactional

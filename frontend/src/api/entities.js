@@ -73,6 +73,8 @@ export const reportsApi = {
   toppers: (topN = 3) => api.get('/reports/toppers', { params: { topN } }),
   departmentPerformance: (departmentId) =>
     api.get('/reports/department-performance', { params: departmentId ? { departmentId } : {} }),
+  transcript: (studentId) => api.get(`/reports/transcript/${studentId}`),
+  transcriptCsv: (studentId) => api.get(`/reports/transcript/${studentId}?format=csv`, { responseType: 'blob' }),
 };
 
 export const schemaApi = {
@@ -97,4 +99,11 @@ export const consoleApi = {
 
 export const riskApi = {
   predict: (data) => api.post('/risk/predict', data),
+  run: (term) => api.post('/risk/run', null, { params: { term } }),
+  list: (params) => api.get('/risk', { params }),
+  modelInfo: () => api.get('/risk/model-info'),
+  metrics: () => api.get('/risk/metrics'),
+  train: () => api.post('/risk/train'),
+  recommend: (studentId, limit = 10) => api.get(`/risk/recommend/${studentId}`, { params: { limit } }),
+  search: (q, limit = 20) => api.get('/risk/search', { params: { q, limit } }),
 };

@@ -92,14 +92,19 @@ public class SubjectRepository {
      * Falls back to LIKE when no keyword given.
      */
     public List<SubjectDto> search(String keyword, Integer departmentId,
-                                   Integer programId, Integer semester, PageRequest page) {
+                                   Integer programId, Integer semester, String mode, PageRequest page) {
         StringBuilder sql = new StringBuilder(BASE_SELECT + " WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         if (keyword != null && !keyword.isBlank()) {
-            // FULLTEXT boolean mode: prefix match e.g. "data*"
-            sql.append(" AND MATCH(s.title, s.description) AGAINST(? IN BOOLEAN MODE)");
-            params.add(keyword);
+            if ("LIKE".equalsIgnoreCase(mode)) {
+                sql.append(" AND (s.code LIKE CONCAT('%', ?, '%') OR s.title LIKE CONCAT('%', ?, '%') " +
+                        "OR s.description LIKE CONCAT('%', ?, '%'))");
+                params.add(keyword); params.add(keyword); params.add(keyword);
+            } else {
+                sql.append(" AND MATCH(s.title, s.description) AGAINST(? IN BOOLEAN MODE)");
+                params.add(keyword);
+            }
         }
         if (departmentId != null) {
             sql.append(" AND s.department_id = ?");

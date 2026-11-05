@@ -3,6 +3,9 @@
 #
 # Services:
 #   db       – MySQL 8.4 (InnoDB, utf8mb4)
+#   ai       – internal FastAPI ML service
+#   backend  – Spring Boot API
+#   frontend – Nginx-served React application
 #              Auto-runs database/setup/00_create_database_and_users.sql
 #              on first start via docker-entrypoint-initdb.d/
 #
@@ -12,10 +15,9 @@
 #   docker compose down           # stop (keeps volume)
 #   docker compose down -v        # stop + delete volume (full reset)
 #
-# After MySQL is up (~15s), start Spring Boot:
-#   cd backend && .\mvnw.cmd spring-boot:run
-# Then start React:
-#   cd frontend && npm run dev
+# Usage:
+#   docker compose up --build -d
+#   open http://localhost:5173
 # =============================================================================
 
 services:
@@ -58,6 +60,54 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  ai:
+    build:
+      context: ./ai-service
+    container_name: edumanage_ai
+    restart: unless-stopped
+    environment:
+      ML_DATABASE_URL: mysql+pymysql://ml_readonly:ChangeMe_ml_2026!@db:3306/edu_db
+      ML_INTERNAL_KEY: dev-internal-secret-change-me
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: edumanage_backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+      SPRING_DATASOURCE_JDBC_URL: jdbc:mysql://db:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+      SPRING_FLYWAY_DATASOURCE_JDBC_URL: jdbc:mysql://db:3306/edu_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+      APP_AI_SERVICE_URL: http://ai:8001
+      APP_INTERNAL_KEY: dev-internal-secret-change-me
+    depends_on:
+      db:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: edumanage_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
 
 volumes:
   mysql_data:

@@ -41,9 +41,9 @@ import java.util.Map;
  * ┌──────────────────────────────────────────┬─────────────────────┐
  * │ Endpoint                                 │ Access              │
  * ├──────────────────────────────────────────┼─────────────────────┤
- * │ GET /api/schema                          │ ADMIN               │
- * │ GET /api/schema?table=<name>             │ ADMIN               │
- * │ GET /api/schema/er-image                 │ ADMIN               │
+ * │ GET /api/schema                          │ Authenticated       │
+ * │ GET /api/schema?table=<name>             │ Authenticated       │
+ * │ GET /api/schema/er-image                 │ Authenticated       │
  * └──────────────────────────────────────────┴─────────────────────┘
  */
 @Slf4j
@@ -74,7 +74,7 @@ public class SchemaController {
      * REFERENTIAL_CONSTRAINTS together describe the full logical schema.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ResponseEnvelope<Map<String, Object>>> schema(
             @RequestParam(required = false) String table) {
 
@@ -162,7 +162,7 @@ public class SchemaController {
      * or any ER-diagram tool, and save the result as docs/er_diagram.png.
      */
     @GetMapping("/er-image")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public void erImage(HttpServletResponse response) throws IOException {
         // Resolve relative to the working directory (project root when run via Maven)
         Path imagePath = Paths.get("docs", "er_diagram.png").toAbsolutePath();

@@ -39,3 +39,13 @@ The prediction endpoint requires `X-Internal-Key` and returns HTTP 503 until a
 model artifact has been trained. It reads features only from `v_ml_features`.
 The browser calls the Spring endpoint `/api/risk/predict`; Spring is the only
 browser-facing service and forwards the internal key to this service.
+
+Protected API routes:
+
+- `POST /predict` and `POST /predict-batch`
+- `GET /model/info` and `GET /model/metrics`
+- `POST /train`
+- `GET /recommend/{student_id}` and `GET /search?q=...`
+
+`GET /health` is the only unauthenticated route. Swagger is available at
+`/docs`; use the `X-Internal-Key` header for protected operations.

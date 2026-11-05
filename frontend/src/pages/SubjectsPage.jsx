@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { subjectsApi } from '../api/entities';
+import { subjectsApi, riskApi } from '../api/entities';
 import {
   PageShell, SearchBar, DataTable, Pagination,
   ConfirmDialog, FormModal, TriggerAlert, ErrorAlert,
@@ -36,6 +36,7 @@ export default function SubjectsPage() {
 
   const [searchTitle, setSearchTitle] = useState('');
   const [filterDept, setFilterDept]   = useState('');
+  const [searchMode, setSearchMode] = useState('LIKE');
 
   const [formOpen, setFormOpen] = useState(false);
   const [editRow, setEditRow]   = useState(null);
@@ -48,17 +49,20 @@ export default function SubjectsPage() {
   const load = useCallback(async (p = page, preserveTrace = false) => {
     setLoading(true); setError(null); if (!preserveTrace) setLastTrace(null);
     try {
-      const data = await subjectsApi.search({
-        title: searchTitle || undefined,
-        departmentId: filterDept || undefined,
-        page: p, size: PAGE_SIZE,
-      });
+      const data = searchMode === 'AI' && searchTitle
+        ? await riskApi.search(searchTitle)
+        : await subjectsApi.search({
+          keyword: searchTitle || undefined,
+          mode: searchMode,
+          departmentId: filterDept || undefined,
+          page: p, size: PAGE_SIZE,
+        });
       setRows(Array.isArray(data) ? data : []);
       setTotal(Array.isArray(data) ? data.length : 0);
       if (!preserveTrace) setLastTrace(getLatestTrace());
     } catch (e) { setError(e?.response?.data?.message || e.message); }
     finally { setLoading(false); }
-  }, [page, searchTitle, filterDept]);
+  }, [page, searchTitle, filterDept, searchMode]);
 
   useEffect(() => { load(0); }, []);
 
@@ -121,6 +125,9 @@ export default function SubjectsPage() {
       <SearchBar value={searchTitle} onChange={setSearchTitle}
         onSearch={() => { setPage(0); load(0); }} placeholder="Search by title…">
         <Input value={filterDept} onChange={setFilterDept} placeholder="Dept ID" type="number" />
+        <Select value={searchMode} onChange={setSearchMode} options={[
+          { value: 'LIKE', label: 'LIKE' }, { value: 'FULLTEXT', label: 'FULLTEXT' }, { value: 'AI', label: 'AI' },
+        ]} placeholder={null} />
       </SearchBar>
 
       <DataTable columns={COLUMNS} rows={rows} loading={loading} onEdit={openEdit} onDelete={r => setDeleteTarget(r)} />

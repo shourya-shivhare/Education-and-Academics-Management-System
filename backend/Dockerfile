@@ -9,31 +9,24 @@
 # =============================================================================
 
 # ── Stage 1: build ────────────────────────────────────────────────────────────
-FROM eclipse-temurin:25-jdk-jammy AS builder
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
-# Copy Maven wrapper first so Docker can cache the Maven download layer
-# separately from source changes.
-COPY .mvn/            .mvn/
-COPY mvnw             mvnw
-COPY mvnw.cmd         mvnw.cmd
 COPY pom.xml          pom.xml
 
 # Make the wrapper executable (it's a shell script on Linux)
-RUN chmod +x mvnw
-
 # Download all dependencies without building – creates a cached layer that is
 # reused on subsequent builds if pom.xml hasn't changed.
-RUN ./mvnw dependency:go-offline -B --no-transfer-progress
+RUN mvn dependency:go-offline -B --no-transfer-progress
 
 # Copy source and build the fat jar.
 # -DskipTests: no tests per project rules.
 COPY src/ src/
-RUN ./mvnw package -DskipTests -B --no-transfer-progress
+RUN mvn package -DskipTests -B --no-transfer-progress
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
-FROM eclipse-temurin:25-jre-jammy AS runtime
+FROM eclipse-temurin:17-jre-jammy AS runtime
 
 # Non-root user for security best practice
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser

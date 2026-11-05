@@ -19,6 +19,7 @@ import SchemaPage from './pages/SchemaPage';
 import LabPage from './pages/LabPage';
 import ConsolePage from './pages/ConsolePage';
 import RiskPage from './pages/RiskPage';
+import TranscriptPage from './pages/TranscriptPage';
 
 /**
  * App – top-level router.
@@ -27,20 +28,8 @@ import RiskPage from './pages/RiskPage';
  *   /login          – public (redirects home if already logged in)
  *   /*              – protected; wrapped in <Layout> (sidebar + topbar)
  *     /             – DashboardPage (role-aware)
- *     /students     – stub (Prompt 17)
- *     /faculty      – stub
- *     /subjects     – stub
- *     /offerings    – stub
- *     /enrollment   – stub
- *     /attendance   – stub
- *     /marks        – stub
- *     /transcript   – stub (student only)
- *     /reports      – stub (Prompt 18)
- *     /labs/acid    – stub (Prompt 18)
- *     /labs/concurrency – stub (Prompt 18)
- *     /schema       – stub (Prompt 18) – the "View ER / Schema" target
- *     /risk         – internal ML risk prediction dashboard
- *     /console      – stub (ADMIN only, Prompt 18)
+ *     /students … /transcript – protected academic pages
+ *     /reports, /labs, /schema, /risk, /console – protected DBMS/analytics pages
  */
 export default function App() {
   return (
@@ -56,7 +45,6 @@ export default function App() {
               <Route element={<Layout />}>
                 <Route index element={<DashboardPage />} />
 
-                {/* Stubs – replaced one-by-one in Prompt 17 and 18 */}
                 <Route path="/students"         element={<StudentsPage />} />
                 <Route path="/faculty"          element={<FacultyPage />} />
                 <Route path="/subjects"         element={<SubjectsPage />} />
@@ -64,7 +52,7 @@ export default function App() {
                 <Route path="/enrollment"       element={<EnrollmentPage />} />
                 <Route path="/attendance"       element={<AttendancePage />} />
                 <Route path="/marks"            element={<MarksPage />} />
-                <Route path="/transcript"       element={<ComingSoon title="My Transcript" />} />
+                <Route path="/transcript"       element={<TranscriptPage />} />
                 <Route path="/reports"          element={<ReportsPage />} />
                 <Route path="/labs/acid"        element={<LabPage kind="acid" />} />
                 <Route path="/labs/concurrency" element={<LabPage kind="concurrency" />} />
@@ -79,21 +67,5 @@ export default function App() {
         </BrowserRouter>
       </TraceProvider>
     </AuthProvider>
-  );
-}
-
-/**
- * ComingSoon – placeholder for routes not yet implemented.
- */
-function ComingSoon({ title }) {
-  return (
-    <div className="coming-soon">
-      <div className="coming-soon-icon">🚧</div>
-      <h2>{title}</h2>
-      <p className="coming-soon-sub">This page will be implemented in the next prompt.</p>
-      <p className="coming-soon-hint">
-        The backend API is already ready — only the React UI is pending.
-      </p>
-    </div>
   );
 }

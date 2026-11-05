@@ -46,9 +46,10 @@ public class SubjectController {
             @RequestParam(required = false) Integer departmentId,
             @RequestParam(required = false) Integer programId,
             @RequestParam(required = false) Integer semester,
+            @RequestParam(defaultValue = "FULLTEXT") String mode,
             @Valid PageRequest page) {
         return ResponseEntity.ok(ResponseEnvelope.ok(
-                service.search(keyword, departmentId, programId, semester, page),
+                service.search(keyword, departmentId, programId, semester, mode, page),
                 trace.getEntries()));
     }
 

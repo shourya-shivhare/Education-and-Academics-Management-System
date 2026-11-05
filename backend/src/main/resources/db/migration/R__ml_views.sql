@@ -181,5 +181,15 @@ FROM enrollment e
 JOIN course_offering co ON co.offering_id = e.offering_id
 GROUP BY e.student_id, co.term_id;
 
+CREATE OR REPLACE VIEW v_ml_student_profile AS
+SELECT
+    student_id,
+    subject_code,
+    subject_title,
+    grade,
+    grade_point
+FROM v_student_transcript;
+
 GRANT SELECT ON edu_db.v_ml_features TO 'ml_readonly_role';
 GRANT SELECT ON edu_db.v_ml_labels TO 'ml_readonly_role';
+GRANT SELECT ON edu_db.v_ml_student_profile TO 'ml_readonly_role';
